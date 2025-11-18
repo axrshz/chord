@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Synced Music Queue – Step 3</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 2rem;
+        background: #f4f4f9;
+      }
+      input,
+      button {
+        padding: 0.8rem;
+        font-size: 1rem;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        padding: 0.8rem;
+        background: white;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .remove {
+        color: red;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Synced Music Queue</h1>
+    <input id="track" placeholder="Enter song name" style="width: 70%" />
+    <button onclick="addTrack()">Add Track</button>
+    <h2>Playlist</h2>
+    <ul id="list"></ul>
+
+    <script>
+      const ws = new WebSocket("ws://localhost:8080/ws");
+      const list = document.getElementById("list");
+
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === "playlist") {
+          renderPlaylist(msg.playlist);
+        }
+      };
+
+      function renderPlaylist(tracks) {
+        list.innerHTML = "";
+        tracks.forEach((t) => {
+          const li = document.createElement("li");
+          li.innerHTML = `${t.name} <span class="remove" onclick="remove('${t.id}')">✕</span>`;
+          list.appendChild(li);
+        });
+      }
+
+      function addTrack() {
+        const input = document.getElementById("track");
+        if (input.value.trim()) {
+          ws.send(JSON.stringify({ action: "add", track: input.value.trim() }));
+          input.value = "";
+        }
+      }
+
+      function remove(id) {
+        ws.send(JSON.stringify({ action: "remove", id: id }));
+      }
+
+      // Allow pressing Enter in input
+      document.getElementById("track").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") addTrack();
+      });
+    </script>
+  </body>
+</html>
